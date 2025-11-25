@@ -1,0 +1,15 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dev
+WORKDIR /src
+
+# Copy project file and restore dependencies
+COPY ["backend.csproj", "./"]
+RUN dotnet restore "backend.csproj"
+
+# Copy everything else
+COPY . .
+
+EXPOSE 5000
+
+# Use dotnet watch for hot reload in development
+ENTRYPOINT ["dotnet", "watch", "run", "--urls", "http://0.0.0.0:5000"]
+

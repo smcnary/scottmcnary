@@ -1,0 +1,15 @@
+bin
+obj
+.git
+.gitignore
+README.md
+.env
+.env.local
+*.user
+*.suo
+*.cache
+.vs
+.vscode
+.idea
+.DS_Store
+
