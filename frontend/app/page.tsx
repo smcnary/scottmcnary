@@ -1,9 +1,9 @@
-import { getPhotos } from '@/lib/api';
+import { getPhotos, Photo } from '@/lib/api';
 import PhotoGallery from '@/components/PhotoGallery';
 import Link from 'next/link';
 
 export default async function Home() {
-  let photos = [];
+  let photos: Photo[] = [];
   try {
     photos = await getPhotos();
   } catch (error) {
