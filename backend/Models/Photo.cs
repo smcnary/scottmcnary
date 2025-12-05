@@ -36,3 +36,6 @@ public class Photo
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
+
+
+

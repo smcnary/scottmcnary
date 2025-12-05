@@ -14,3 +14,6 @@ dotnet ef database update --project backend.csproj
 
 Note: The application will automatically run migrations on startup if the database connection is configured.
 
+
+
+

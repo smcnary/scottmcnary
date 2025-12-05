@@ -13,3 +13,6 @@ EXPOSE 5000
 # Use dotnet watch for hot reload in development
 ENTRYPOINT ["dotnet", "watch", "run", "--urls", "http://0.0.0.0:5000"]
 
+
+
+
