@@ -1,10 +1,10 @@
 import { MetadataRoute } from 'next';
-import { getPhotos } from '@/lib/api';
+import { getPhotos, Photo } from '@/lib/api';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   
-  let photos = [];
+  let photos: Photo[] = [];
   try {
     photos = await getPhotos();
   } catch (error) {
