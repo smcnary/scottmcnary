@@ -18,6 +18,34 @@ if (string.IsNullOrEmpty(connectionString))
     connectionString = builder.Configuration["ConnectionStrings__DefaultConnection"];
 }
 
+// Handle Railway DATABASE_URL format (postgresql://) or Railway's auto-provided connection string
+if (string.IsNullOrEmpty(connectionString))
+{
+    var databaseUrl = builder.Configuration["DATABASE_URL"];
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        // Convert PostgreSQL URL format to Npgsql connection string format
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={Uri.UnescapeDataString(userInfo[1])}";
+    }
+}
+
+// Also check for Railway's formatted connection string and fix if needed
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgresql://"))
+{
+    try
+    {
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo.Split(':');
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={Uri.UnescapeDataString(userInfo[1])}";
+    }
+    catch
+    {
+        // If parsing fails, try to use as-is
+    }
+}
+
 if (!string.IsNullOrEmpty(connectionString))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
