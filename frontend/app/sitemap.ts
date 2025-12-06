@@ -6,7 +6,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
   let photos: Photo[] = [];
   try {
-    photos = await getPhotos();
+    // Fetch all photos for sitemap - use a large page size to get all photos
+    // If there are more than 1000 photos, we'd need to paginate, but for now this should work
+    const response = await getPhotos(1, 1000);
+    photos = response.photos;
   } catch (error) {
     console.error('Error fetching photos for sitemap:', error);
   }
