@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'In Memory of Scott Roberts McNary',
-  description: 'A memorial site celebrating the life and memories of Scott Roberts McNary',
-  keywords: ['Scott Roberts McNary', 'memorial', 'remembrance'],
+  title: 'In Loving Memory of Scott R. McNary',
+  description: 'A memorial site celebrating the life and memories of Scott R. McNary',
+  keywords: ['Scott R. McNary', 'memorial', 'remembrance'],
 }
 
 export default function RootLayout({
