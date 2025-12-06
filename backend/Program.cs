@@ -83,8 +83,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 
-// Serve static files from wwwroot
+// Serve static files from wwwroot (always available)
 app.UseStaticFiles();
+
+// If STORAGE_PATH is set (Railway Volume), also serve uploads from there
+var storagePath = builder.Configuration["STORAGE_PATH"];
+if (!string.IsNullOrEmpty(storagePath))
+{
+    // Serve static files from Railway Volume for uploads
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(storagePath),
+        RequestPath = ""
+    });
+}
 
 app.UseAuthorization();
 
