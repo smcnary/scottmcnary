@@ -105,14 +105,54 @@
 - Verify PostgreSQL service is running
 - Check connection string format
 
-## File Storage
+## File Storage with Railway Volumes
 
-For production, consider using cloud storage (AWS S3, Cloudflare R2) instead of local filesystem:
-- More reliable for Railway deployments
-- Better scalability
-- Persistent storage across deployments
+Photos are stored using Railway Volumes for persistent storage across deployments.
 
-Update `UploadService.cs` to use cloud storage SDK instead of local file system.
+### Setting Up Railway Volume
+
+1. **Add Volume to Backend Service**
+   - In your Railway project, go to your backend service
+   - Click on the "Volumes" tab
+   - Click "Add Volume"
+   - Name it `photo-storage` (or any name you prefer)
+   - Set the mount path to `/data` (or your preferred path)
+   - Click "Add"
+
+2. **Configure Environment Variable**
+   - In your backend service, go to the "Variables" tab
+   - Add a new variable:
+     - **Name**: `STORAGE_PATH`
+     - **Value**: `/data` (must match the volume mount path from step 1)
+   - Save the variable
+
+3. **Verify Volume Mount**
+   - After deployment, check the Railway logs
+   - You should see: "Storing photos in: /data/uploads"
+   - This confirms the volume is being used
+
+### How It Works
+
+- **Local Development**: Photos are stored in `backend/wwwroot/uploads/` (default behavior)
+- **Production (Railway)**: Photos are stored in the Railway Volume at `/data/uploads/`
+- The `UploadService` automatically detects the `STORAGE_PATH` environment variable
+- If `STORAGE_PATH` is not set, it falls back to `wwwroot` (for local development)
+
+### Volume Benefits
+
+- ✅ Persistent storage across deployments
+- ✅ Photos survive container restarts
+- ✅ No data loss on redeployments
+- ✅ Easy backup and restore options
+
+### Alternative: Cloud Storage
+
+For even better scalability and reliability, consider migrating to cloud storage:
+- AWS S3
+- Cloudflare R2
+- Google Cloud Storage
+
+These options provide better performance and automatic backups, but require additional setup.
 
 
 
