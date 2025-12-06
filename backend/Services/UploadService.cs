@@ -6,25 +6,42 @@ namespace backend.Services;
 public class UploadService
 {
     private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<UploadService> _logger;
     private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp" };
     private const long MaxFileSize = 10 * 1024 * 1024; // 10MB per file
 
-    public UploadService(IWebHostEnvironment environment, ILogger<UploadService> logger)
+    public UploadService(
+        IWebHostEnvironment environment,
+        IConfiguration configuration,
+        ILogger<UploadService> logger)
     {
         _environment = environment;
+        _configuration = configuration;
         _logger = logger;
     }
 
     public async Task<List<Photo>> ProcessZipFile(Stream zipStream, string zipFileName)
     {
         var photos = new List<Photo>();
-        var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads");
+        
+        // Use Railway Volume path if configured, otherwise use WebRootPath
+        // Railway volumes are typically mounted at /data or custom path via STORAGE_PATH env var
+        var storageBasePath = _configuration["STORAGE_PATH"];
+        if (string.IsNullOrEmpty(storageBasePath))
+        {
+            storageBasePath = _environment.WebRootPath;
+        }
+        
+        var uploadsPath = Path.Combine(storageBasePath, "uploads");
         
         if (!Directory.Exists(uploadsPath))
         {
             Directory.CreateDirectory(uploadsPath);
+            _logger.LogInformation($"Created uploads directory at: {uploadsPath}");
         }
+        
+        _logger.LogInformation($"Storing photos in: {uploadsPath}");
 
         using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
         
