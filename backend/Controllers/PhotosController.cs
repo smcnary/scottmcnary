@@ -28,13 +28,31 @@ public class PhotosController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Photo>>> GetPhotos()
+    public async Task<ActionResult<PaginatedPhotosResponse>> GetPhotos(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 24)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 24;
+        if (pageSize > 100) pageSize = 100; // Max page size limit
+
+        var totalCount = await _context.Photos.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
         var photos = await _context.Photos
             .OrderByDescending(p => p.UploadedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
         
-        return Ok(photos);
+        return Ok(new PaginatedPhotosResponse
+        {
+            Photos = photos,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        });
     }
 
     [HttpGet("{id}")]
@@ -145,5 +163,14 @@ public class UpdateMetadataRequest
     public string? Title { get; set; }
     public string? Description { get; set; }
     public string[]? Keywords { get; set; }
+}
+
+public class PaginatedPhotosResponse
+{
+    public IEnumerable<Photo> Photos { get; set; } = new List<Photo>();
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages { get; set; }
 }
 
