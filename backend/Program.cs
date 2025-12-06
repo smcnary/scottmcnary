@@ -12,36 +12,38 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Prefer Railway's DATABASE_URL, then check ConnectionStrings
+var connectionString = builder.Configuration["DATABASE_URL"];
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
 if (string.IsNullOrEmpty(connectionString))
 {
     connectionString = builder.Configuration["ConnectionStrings__DefaultConnection"];
 }
 
-// Handle Railway DATABASE_URL format (postgresql://) or Railway's auto-provided connection string
-if (string.IsNullOrEmpty(connectionString))
+// Remove any whitespace/newlines that might be in the connection string
+if (!string.IsNullOrEmpty(connectionString))
 {
-    var databaseUrl = builder.Configuration["DATABASE_URL"];
-    if (!string.IsNullOrEmpty(databaseUrl))
-    {
-        // Convert PostgreSQL URL format to Npgsql connection string format
-        var uri = new Uri(databaseUrl);
-        var userInfo = uri.UserInfo.Split(':');
-        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={Uri.UnescapeDataString(userInfo[1])}";
-    }
+    connectionString = connectionString.Replace("\n", "").Replace("\r", "").Trim();
 }
 
-// Also check for Railway's formatted connection string and fix if needed
+// Convert PostgreSQL URL format (postgresql://) to Npgsql connection string format
 if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgresql://"))
 {
     try
     {
         var uri = new Uri(connectionString);
         var userInfo = uri.UserInfo.Split(':');
-        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={Uri.UnescapeDataString(userInfo[1])}";
+        if (userInfo.Length == 2)
+        {
+            connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={Uri.UnescapeDataString(userInfo[1])}";
+        }
     }
-    catch
+    catch (Exception ex)
     {
+        Console.WriteLine($"Error parsing connection string: {ex.Message}");
         // If parsing fails, try to use as-is
     }
 }
