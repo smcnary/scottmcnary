@@ -86,16 +86,30 @@ app.UseCors("AllowFrontend");
 // Serve static files from wwwroot (always available)
 app.UseStaticFiles();
 
-// If STORAGE_PATH is set (Railway Volume), also serve uploads from there
+// If STORAGE_PATH is set (Railway Volume), serve uploads from there
 var storagePath = builder.Configuration["STORAGE_PATH"];
 if (!string.IsNullOrEmpty(storagePath))
 {
-    // Serve static files from Railway Volume for uploads
-    app.UseStaticFiles(new StaticFileOptions
+    var uploadsPath = Path.Combine(storagePath, "uploads");
+    if (Directory.Exists(uploadsPath))
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(storagePath),
-        RequestPath = ""
-    });
+        // Serve static files from Railway Volume uploads directory
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+            RequestPath = "/uploads"
+        });
+        logger.LogInformation($"Serving uploads from Railway Volume: {uploadsPath}");
+    }
+    else
+    {
+        logger.LogWarning($"Uploads directory not found at {uploadsPath}. Uploads may not be accessible.");
+    }
+}
+else
+{
+    // If no STORAGE_PATH, uploads should be in wwwroot/uploads (served by default UseStaticFiles)
+    logger.LogInformation("Using default wwwroot for static files (no STORAGE_PATH configured)");
 }
 
 app.UseAuthorization();
