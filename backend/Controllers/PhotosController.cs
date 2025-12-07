@@ -220,7 +220,7 @@ public class PhotosController : ControllerBase
 
                 // Extract file
                 using var entryStream = entry.DataStream ?? Stream.Null;
-                using var fileOutStream = File.Create(destinationPath);
+                using var fileOutStream = System.IO.File.Create(destinationPath);
                 await entryStream.CopyToAsync(fileOutStream);
                 
                 extractedCount++;
