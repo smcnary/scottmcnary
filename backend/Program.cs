@@ -102,12 +102,44 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure database is created
-using (var scope = app.Services.CreateScope())
+// Log startup information
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+logger.LogInformation($"Starting application on port {port}");
+logger.LogInformation($"Environment: {app.Environment.EnvironmentName}");
+logger.LogInformation($"Database connection configured: {!string.IsNullOrEmpty(connectionString)}");
+
+// Ensure database is created and migrated
+if (!string.IsNullOrEmpty(connectionString))
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        logger.LogInformation("Starting database migration...");
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+        logger.LogInformation("Database migration completed successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "CRITICAL: Error running database migration. The app will start, but database operations may fail.");
+        // Don't throw - allow the app to start even if migration fails
+        // This helps with debugging in Railway
+    }
 }
+else
+{
+    logger.LogWarning("No database connection string configured. Database features will not be available.");
+}
+
+// Ensure we're listening on the correct interface and port
+// Railway sets PORT env var, and we use --urls in railway.json
+// But as a fallback, we can also set it programmatically
+if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+{
+    app.Urls.Add($"http://0.0.0.0:{port}");
+}
+logger.LogInformation($"Application URLs: {string.Join(", ", app.Urls)}");
 
 app.Run();
 
