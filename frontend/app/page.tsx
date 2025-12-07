@@ -2,12 +2,10 @@ export default function Home() {
   return (
     <div className="max-w-[900px] mx-auto px-4 pb-12">
       <header className="text-center pt-10 px-4 pb-6">
-        {/* Replace the div below with an <img> tag when you have a photo:
-             <img src="scott-photo.jpg" alt="Photo of Scott R. McNary" className="w-40 h-40 rounded-full object-cover border-4 border-white/90 shadow-lg mb-5 bg-[#d8dde6] inline-block">
-        */}
-        <div 
-          className="w-40 h-40 rounded-full object-cover border-4 border-white/90 shadow-lg mb-5 bg-[#d8dde6] inline-block" 
-          aria-hidden="true"
+        <img 
+          src="/scott-photo.png" 
+          alt="Photo of Scott R. McNary" 
+          className="w-40 h-40 rounded-full object-cover border-4 border-white/90 shadow-lg mb-5 bg-[#d8dde6] inline-block"
         />
 
         <h1 className="text-[2.1rem] tracking-[0.06em] uppercase m-0 font-normal">
