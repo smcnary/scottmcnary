@@ -74,10 +74,10 @@ export default function PaginationControls({ currentPage, totalPages }: Paginati
         {/* Previous button */}
         <Link
           href={createPageUrl(currentPage - 1)}
-          className={`px-4 py-2 rounded-md border ${
+          className={`px-4 py-2 rounded-md border transition-colors ${
             currentPage === 1
-              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-gray-300 dark:border-gray-700 cursor-not-allowed'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ? 'bg-[#f8fafc] text-[#999] border-[#d0d7e2] cursor-not-allowed'
+              : 'bg-white text-[#555] border-[#d0d7e2] hover:bg-[#f8fafc]'
           }`}
           aria-disabled={currentPage === 1}
           tabIndex={currentPage === 1 ? -1 : 0}
@@ -92,7 +92,7 @@ export default function PaginationControls({ currentPage, totalPages }: Paginati
               return (
                 <span
                   key={`ellipsis-${index}`}
-                  className="px-2 text-gray-500 dark:text-gray-400"
+                  className="px-2 text-[#888]"
                 >
                   ...
                 </span>
@@ -106,10 +106,10 @@ export default function PaginationControls({ currentPage, totalPages }: Paginati
               <Link
                 key={pageNum}
                 href={createPageUrl(pageNum)}
-                className={`px-4 py-2 rounded-md border ${
+                className={`px-4 py-2 rounded-md border transition-colors ${
                   isActive
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? 'bg-[#444] text-white border-[#444]'
+                    : 'bg-white text-[#555] border-[#d0d7e2] hover:bg-[#f8fafc]'
                 }`}
               >
                 {pageNum}
@@ -121,10 +121,10 @@ export default function PaginationControls({ currentPage, totalPages }: Paginati
         {/* Next button */}
         <Link
           href={createPageUrl(currentPage + 1)}
-          className={`px-4 py-2 rounded-md border ${
+          className={`px-4 py-2 rounded-md border transition-colors ${
             currentPage === totalPages
-              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-gray-300 dark:border-gray-700 cursor-not-allowed'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ? 'bg-[#f8fafc] text-[#999] border-[#d0d7e2] cursor-not-allowed'
+              : 'bg-white text-[#555] border-[#d0d7e2] hover:bg-[#f8fafc]'
           }`}
           aria-disabled={currentPage === totalPages}
           tabIndex={currentPage === totalPages ? -1 : 0}
@@ -133,11 +133,14 @@ export default function PaginationControls({ currentPage, totalPages }: Paginati
         </Link>
       </div>
 
-      <div className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="text-sm text-[#666]">
         Page {currentPage} of {totalPages}
       </div>
     </div>
   );
 }
+
+
+
 
 
