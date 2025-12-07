@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import PhotoGallery from '@/components/PhotoGallery';
 import { getPhotos } from '@/lib/api';
@@ -21,51 +20,70 @@ export default async function GalleryPage({ searchParams }: PageProps) {
   const currentPage = parseInt(params.page || '1', 10) || 1;
 
   let paginatedResponse;
+  let error: string | null = null;
+  
   try {
     paginatedResponse = await getPhotos(currentPage, 24);
-  } catch (error) {
-    console.error('Error fetching photos:', error);
-    notFound();
+  } catch (err) {
+    console.error('Error fetching photos:', err);
+    error = err instanceof Error ? err.message : 'An error occurred while loading photos';
+    paginatedResponse = null;
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-2">
-            Photo Gallery
-          </h1>
-          <p className="text-center text-gray-600 dark:text-gray-400">
-            In memory of Scott R. McNary
+    <div className="max-w-[900px] mx-auto px-4 pb-12">
+      <header className="text-center pt-10 px-4 pb-6">
+        <h1 className="text-[2.1rem] tracking-[0.06em] uppercase m-0 font-normal text-[#444]">
+          Photo Gallery
+        </h1>
+        <div className="text-base my-2 text-[#555]">
+          In memory of Scott R. McNary
+        </div>
+      </header>
+
+      <div 
+        className="h-px bg-gradient-to-r from-transparent via-[#c1c7d0] to-transparent my-8"
+        aria-hidden="true"
+      />
+
+      {error ? (
+        <div className="bg-white/90 rounded-2xl p-8 shadow-lg backdrop-blur-[10px] text-center">
+          <h2 className="text-[1.3rem] mb-3 uppercase tracking-[0.12em] text-[#444] font-normal m-0">
+            Unable to Load Photos
+          </h2>
+          <p className="text-[#666] mb-4 leading-[1.7]">
+            {error}
+          </p>
+          <p className="text-sm text-[#777]">
+            Please check your connection and try again, or contact support if the problem persists.
           </p>
         </div>
+      ) : paginatedResponse && paginatedResponse.photos.length === 0 ? (
+        <div className="bg-white/90 rounded-2xl p-8 shadow-lg backdrop-blur-[10px] text-center">
+          <p className="text-[#666] leading-[1.7] mb-0">
+            No photos available yet. Check back soon for memories and photos of Scott.
+          </p>
+        </div>
+      ) : paginatedResponse ? (
+        <>
+          <PhotoGallery photos={paginatedResponse.photos} />
+          <Suspense fallback={<div className="mt-8 text-center text-[#666]">Loading pagination...</div>}>
+            <PaginationControls
+              currentPage={paginatedResponse.page}
+              totalPages={paginatedResponse.totalPages}
+            />
+          </Suspense>
+        </>
+      ) : null}
 
-        {paginatedResponse.photos.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">No photos available yet.</p>
-          </div>
-        ) : (
-          <>
-            <PhotoGallery photos={paginatedResponse.photos} />
-            <Suspense fallback={<div className="mt-8 text-center text-gray-600 dark:text-gray-400">Loading pagination...</div>}>
-              <PaginationControls
-                currentPage={paginatedResponse.page}
-                totalPages={paginatedResponse.totalPages}
-              />
-            </Suspense>
-          </>
-        )}
-
-        <div className="mt-8 text-center">
-          <a
-            href="/"
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
+      <footer className="text-center text-[0.85rem] text-[#777] mt-8">
+        <p>
+          <a href="/" className="text-blue-600 hover:underline">
             ← Back to Home
           </a>
-        </div>
-      </div>
-    </main>
+        </p>
+      </footer>
+    </div>
   );
 }
 
