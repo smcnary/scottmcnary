@@ -22,11 +22,23 @@ export interface PaginatedPhotosResponse {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Log API URL in development for debugging (server-side only)
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('[API] Using API URL:', API_URL);
+}
+
 export async function getPhotos(page: number = 1, pageSize: number = 24): Promise<PaginatedPhotosResponse> {
+  // Create timeout controller for better compatibility
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  
   try {
     const response = await fetch(`${API_URL}/api/photos?page=${page}&pageSize=${pageSize}`, {
       cache: 'no-store', // Ensure fresh data on each request
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -71,7 +83,19 @@ export async function getPhotos(page: number = 1, pageSize: number = 24): Promis
       totalPages: data.TotalPages ?? data.totalPages ?? 0,
     };
   } catch (error) {
+    clearTimeout(timeoutId);
     if (error instanceof Error) {
+      // Handle network errors, timeouts, and CORS errors
+      if (error.name === 'AbortError' || error.message.includes('timeout') || error.message.includes('aborted')) {
+        throw new Error(`Connection timeout. The API at ${API_URL} did not respond within 10 seconds. Please check if the backend is running and accessible.`);
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Network request failed') || error.message.includes('fetch')) {
+        throw new Error(`Unable to connect to the API at ${API_URL}. Please check if the backend server is running and the URL is correct.`);
+      }
+      if (error.message.includes('CORS') || error.message.includes('cors')) {
+        throw new Error('CORS error: The API server is not allowing requests from this origin. Please check CORS configuration on the backend.');
+      }
+      // Re-throw the error if it's already a descriptive Error
       throw error;
     }
     throw new Error('An unexpected error occurred while fetching photos');

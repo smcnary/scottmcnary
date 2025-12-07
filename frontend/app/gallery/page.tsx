@@ -54,9 +54,16 @@ export default async function GalleryPage({ searchParams }: PageProps) {
           <p className="text-[#666] mb-4 leading-[1.7]">
             {error}
           </p>
-          <p className="text-sm text-[#777]">
-            Please check your connection and try again, or contact support if the problem persists.
-          </p>
+          <div className="text-sm text-[#777] space-y-2">
+            <p>Please check:</p>
+            <ul className="list-none text-left max-w-md mx-auto space-y-1">
+              <li>• The backend API is running and accessible</li>
+              <li>• The API URL is correctly configured</li>
+              <li>• Your network connection is working</li>
+              <li>• CORS is properly configured on the backend</li>
+            </ul>
+            <p className="mt-4">If the problem persists, try refreshing the page.</p>
+          </div>
         </div>
       ) : paginatedResponse && paginatedResponse.photos.length === 0 ? (
         <div className="bg-white/90 rounded-2xl p-8 shadow-lg backdrop-blur-[10px] text-center">
