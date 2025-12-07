@@ -74,6 +74,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Get logger early so we can use it for configuration logging
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -117,7 +120,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Log startup information
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 logger.LogInformation($"Starting application on port {port}");
 logger.LogInformation($"Environment: {app.Environment.EnvironmentName}");
