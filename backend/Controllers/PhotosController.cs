@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.Models;
 using backend.Services;
+using System.IO.Compression;
+using System.Formats.Tar;
 
 namespace backend.Controllers;
 
@@ -125,6 +127,120 @@ public class PhotosController : ControllerBase
         {
             _logger.LogError(ex, "Error processing upload");
             return StatusCode(500, new { error = "Error processing upload", details = ex.Message });
+        }
+    }
+
+    [HttpPost("bulk-extract")]
+    public async Task<IActionResult> BulkExtractFiles(
+        IFormFile archiveFile,
+        [FromHeader(Name = "X-Upload-Password")] string? password)
+    {
+        var requiredPassword = _configuration["UPLOAD_PASSWORD"];
+        
+        if (string.IsNullOrEmpty(requiredPassword))
+        {
+            return StatusCode(500, new { error = "Upload password not configured" });
+        }
+
+        if (password != requiredPassword)
+        {
+            return Unauthorized(new { error = "Invalid password" });
+        }
+
+        if (archiveFile == null || archiveFile.Length == 0)
+        {
+            return BadRequest(new { error = "No file uploaded" });
+        }
+
+        if (!archiveFile.FileName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase) &&
+            !archiveFile.FileName.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { error = "File must be a tar.gz archive" });
+        }
+
+        const long maxArchiveSize = 5L * 1024 * 1024 * 1024; // 5GB
+        if (archiveFile.Length > maxArchiveSize)
+        {
+            return BadRequest(new { error = "Archive too large (max 5GB)" });
+        }
+
+        try
+        {
+            // Get the storage path
+            var storagePath = _configuration["STORAGE_PATH"];
+            if (string.IsNullOrEmpty(storagePath))
+            {
+                storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            }
+            
+            var uploadsPath = Path.Combine(storagePath, "uploads");
+            
+            // Ensure directory exists
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+                _logger.LogInformation($"Created uploads directory at: {uploadsPath}");
+            }
+
+            _logger.LogInformation($"Extracting archive to: {uploadsPath}");
+
+            // Extract tar.gz archive
+            using var fileStream = archiveFile.OpenReadStream();
+            using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+            using var tarReader = new TarReader(gzipStream);
+
+            int extractedCount = 0;
+            long totalSize = 0;
+
+            while (tarReader.GetNextEntry() is { } entry)
+            {
+                // Skip directories
+                if (entry.EntryType == TarEntryType.Directory)
+                    continue;
+
+                // Get the file name (handle nested paths)
+                var fileName = entry.Name;
+                if (fileName.Contains('/'))
+                {
+                    fileName = Path.GetFileName(fileName);
+                }
+
+                // Skip if no filename
+                if (string.IsNullOrEmpty(fileName))
+                    continue;
+
+                var destinationPath = Path.Combine(uploadsPath, fileName);
+
+                // Ensure destination directory exists (in case of nested paths)
+                var destDir = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                {
+                    Directory.CreateDirectory(destDir);
+                }
+
+                // Extract file
+                using var entryStream = entry.DataStream ?? Stream.Null;
+                using var fileOutStream = File.Create(destinationPath);
+                await entryStream.CopyToAsync(fileOutStream);
+                
+                extractedCount++;
+                totalSize += entry.Length;
+            }
+
+            _logger.LogInformation($"Extracted {extractedCount} files ({totalSize / 1024 / 1024}MB) to {uploadsPath}");
+
+            return Ok(new
+            {
+                message = $"Successfully extracted {extractedCount} file(s)",
+                count = extractedCount,
+                totalSize = totalSize,
+                destination = uploadsPath
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting archive");
+            return StatusCode(500, new { error = "Error extracting archive", details = ex.Message });
         }
     }
 
