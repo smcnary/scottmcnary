@@ -71,61 +71,59 @@ export default async function PhotoPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-            <div className="relative aspect-video w-full bg-gray-200 dark:bg-gray-700">
-              <Image
-                src={photoUrl}
-                alt={photo.title || photo.fileName}
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-            
-            <div className="p-6">
-              {photo.title && (
-                <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
-                  {photo.title}
-                </h1>
-              )}
-              
-              {photo.description && (
-                <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-line">
-                  {photo.description}
-                </p>
-              )}
-              
-              {photo.keywords && photo.keywords.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {photo.keywords.map((keyword, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm"
-                    >
-                      {keyword}
-                    </span>
-                  ))}
-                </div>
-              )}
-              
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                <p>Uploaded: {new Date(photo.uploadedAt).toLocaleDateString()}</p>
-              </div>
-            </div>
+      <div className="max-w-[900px] mx-auto px-4 pb-12">
+        <div className="bg-white/90 rounded-2xl shadow-lg backdrop-blur-[10px] overflow-hidden mt-10">
+          <div className="relative aspect-video w-full bg-[#f8fafc]">
+            <Image
+              src={photoUrl}
+              alt={photo.title || photo.fileName}
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
-
-          <div className="mt-6 text-center">
-            <a
-              href="/"
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              ← Back to Gallery
-            </a>
+          
+          <div className="p-6">
+            {photo.title && (
+              <h1 className="text-[1.8rem] mb-4 uppercase tracking-[0.08em] text-[#444] font-normal m-0">
+                {photo.title}
+              </h1>
+            )}
+            
+            {photo.description && (
+              <p className="leading-[1.7] mb-4 text-[#333] whitespace-pre-line m-0">
+                {photo.description}
+              </p>
+            )}
+            
+            {photo.keywords && photo.keywords.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {photo.keywords.map((keyword, index) => (
+                  <span
+                    key={index}
+                    className="py-1.5 px-2.5 rounded-full border border-[#d0d7e2] bg-[#f8fafc] text-xs tracking-[0.08em] uppercase text-[#555]"
+                  >
+                    {keyword}
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            <div className="text-sm text-[#777] mt-4">
+              <p>Uploaded: {new Date(photo.uploadedAt).toLocaleDateString()}</p>
+            </div>
           </div>
         </div>
-      </main>
+
+        <div className="mt-8 text-center">
+          <a
+            href="/gallery"
+            className="text-blue-600 hover:underline text-[0.85rem]"
+          >
+            ← Back to Gallery
+          </a>
+        </div>
+      </div>
     </>
   );
 }
