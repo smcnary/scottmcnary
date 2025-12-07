@@ -89,30 +89,70 @@ app.UseCors("AllowFrontend");
 // Serve static files from wwwroot (always available)
 app.UseStaticFiles();
 
-// If STORAGE_PATH is set (Railway Volume), serve uploads from there
+// Configure uploads directory and static file serving
 var storagePath = builder.Configuration["STORAGE_PATH"];
+string? uploadsPath = null;
+bool useStoragePath = false;
+
 if (!string.IsNullOrEmpty(storagePath))
 {
-    var uploadsPath = Path.Combine(storagePath, "uploads");
-    if (Directory.Exists(uploadsPath))
+    uploadsPath = Path.Combine(storagePath, "uploads");
+    
+    // Create uploads directory if it doesn't exist
+    if (!Directory.Exists(uploadsPath))
     {
-        // Serve static files from Railway Volume uploads directory
-        app.UseStaticFiles(new StaticFileOptions
+        try
         {
-            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-            RequestPath = "/uploads"
-        });
-        logger.LogInformation($"Serving uploads from Railway Volume: {uploadsPath}");
+            Directory.CreateDirectory(uploadsPath);
+            logger.LogInformation($"Created uploads directory at: {uploadsPath}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, $"Failed to create uploads directory at {uploadsPath}. Will fall back to wwwroot.");
+            uploadsPath = null;
+        }
     }
-    else
+    
+    // Use STORAGE_PATH if directory exists or was successfully created
+    if (uploadsPath != null && Directory.Exists(uploadsPath))
     {
-        logger.LogWarning($"Uploads directory not found at {uploadsPath}. Uploads may not be accessible.");
+        useStoragePath = true;
     }
+}
+
+// If STORAGE_PATH is not available, use wwwroot/uploads as fallback
+if (!useStoragePath)
+{
+    var wwwrootPath = app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+    uploadsPath = Path.Combine(wwwrootPath, "uploads");
+    
+    if (!Directory.Exists(uploadsPath))
+    {
+        try
+        {
+            Directory.CreateDirectory(uploadsPath);
+            logger.LogInformation($"Created wwwroot uploads directory at: {uploadsPath}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, $"Could not create wwwroot uploads directory: {uploadsPath}");
+        }
+    }
+}
+
+// Register static file middleware for /uploads path
+if (uploadsPath != null && Directory.Exists(uploadsPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads"
+    });
+    logger.LogInformation($"Serving uploads from: {uploadsPath} ({(useStoragePath ? "Railway Volume" : "wwwroot")})");
 }
 else
 {
-    // If no STORAGE_PATH, uploads should be in wwwroot/uploads (served by default UseStaticFiles)
-    logger.LogInformation("Using default wwwroot for static files (no STORAGE_PATH configured)");
+    logger.LogWarning("Uploads directory not available. Image serving may not work correctly.");
 }
 
 app.UseAuthorization();
