@@ -259,6 +259,93 @@ public class PhotosController : ControllerBase
         }
     }
 
+    [HttpPost("rename-files")]
+    public async Task<IActionResult> RenameFilesToMatchDatabase(
+        [FromHeader(Name = "X-Upload-Password")] string? password)
+    {
+        var requiredPassword = _configuration["UPLOAD_PASSWORD"];
+        
+        if (string.IsNullOrEmpty(requiredPassword))
+        {
+            return StatusCode(500, new { error = "Upload password not configured" });
+        }
+
+        if (password != requiredPassword)
+        {
+            return Unauthorized(new { error = "Invalid password" });
+        }
+
+        try
+        {
+            // Get storage path
+            var storagePath = _configuration["STORAGE_PATH"];
+            if (string.IsNullOrEmpty(storagePath))
+            {
+                storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            }
+            
+            var uploadsPath = Path.Combine(storagePath, "uploads");
+            
+            if (!Directory.Exists(uploadsPath))
+            {
+                return BadRequest(new { error = "Uploads directory not found" });
+            }
+
+            // Get all photos from database
+            var photos = await _context.Photos.ToListAsync();
+            
+            int renamed = 0;
+            int skipped = 0;
+            int errors = 0;
+
+            foreach (var photo in photos)
+            {
+                try
+                {
+                    // Extract base filename from FilePath (remove /uploads/ prefix and GUID)
+                    var dbFileName = photo.FilePath.Replace("/uploads/", "");
+                    var baseFileName = photo.FileName; // This is the original filename without GUID
+                    
+                    // Construct the source path (just the base filename)
+                    var sourcePath = Path.Combine(uploadsPath, baseFileName);
+                    // Construct the destination path (with GUID prefix)
+                    var destPath = Path.Combine(uploadsPath, dbFileName);
+                    
+                    // If source exists and destination doesn't, rename it
+                    if (System.IO.File.Exists(sourcePath) && !System.IO.File.Exists(destPath))
+                    {
+                        System.IO.File.Move(sourcePath, destPath);
+                        renamed++;
+                        _logger.LogInformation($"Renamed: {baseFileName} -> {dbFileName}");
+                    }
+                    else if (System.IO.File.Exists(destPath))
+                    {
+                        skipped++; // Already correctly named
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Error renaming file for photo {photo.Id}");
+                    errors++;
+                }
+            }
+
+            return Ok(new
+            {
+                message = "File renaming completed",
+                renamed = renamed,
+                skipped = skipped,
+                errors = errors,
+                total = photos.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error renaming files");
+            return StatusCode(500, new { error = "Error renaming files", details = ex.Message });
+        }
+    }
+
     [HttpPost("metadata/{id}")]
     public async Task<IActionResult> UpdateMetadata(
         Guid id,
