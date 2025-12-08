@@ -194,37 +194,50 @@ public class PhotosController : ControllerBase
 
             while (tarReader.GetNextEntry() is { } entry)
             {
-                // Skip directories
-                if (entry.EntryType == TarEntryType.Directory)
-                    continue;
-
-                // Get the file name (handle nested paths)
-                var fileName = entry.Name;
-                if (fileName.Contains('/'))
+                try
                 {
-                    fileName = Path.GetFileName(fileName);
+                    // Skip directories
+                    if (entry.EntryType == TarEntryType.Directory)
+                        continue;
+
+                    // Get the file name (handle nested paths)
+                    var fileName = entry.Name;
+                    if (fileName.Contains('/'))
+                    {
+                        fileName = Path.GetFileName(fileName);
+                    }
+
+                    // Skip if no filename
+                    if (string.IsNullOrEmpty(fileName))
+                        continue;
+
+                    var destinationPath = Path.Combine(uploadsPath, fileName);
+
+                    // Ensure destination directory exists (in case of nested paths)
+                    var destDir = Path.GetDirectoryName(destinationPath);
+                    if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                    {
+                        Directory.CreateDirectory(destDir);
+                    }
+
+                    // Extract file - read DataStream completely before next iteration
+                    // The DataStream will be disposed when we call GetNextEntry() again
+                    if (entry.DataStream != null)
+                    {
+                        using var fileOutStream = System.IO.File.Create(destinationPath);
+                        // Read all data before the stream gets disposed
+                        await entry.DataStream.CopyToAsync(fileOutStream);
+                        // Ensure stream is fully read
+                        await entry.DataStream.FlushAsync();
+                    }
+                    
+                    extractedCount++;
+                    totalSize += entry.Length;
                 }
-
-                // Skip if no filename
-                if (string.IsNullOrEmpty(fileName))
-                    continue;
-
-                var destinationPath = Path.Combine(uploadsPath, fileName);
-
-                // Ensure destination directory exists (in case of nested paths)
-                var destDir = Path.GetDirectoryName(destinationPath);
-                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                catch (Exception ex)
                 {
-                    Directory.CreateDirectory(destDir);
+                    _logger.LogWarning(ex, $"Error extracting entry {entry?.Name}: {ex.Message}");
                 }
-
-                // Extract file
-                using var entryStream = entry.DataStream ?? Stream.Null;
-                using var fileOutStream = System.IO.File.Create(destinationPath);
-                await entryStream.CopyToAsync(fileOutStream);
-                
-                extractedCount++;
-                totalSize += entry.Length;
             }
 
             _logger.LogInformation($"Extracted {extractedCount} files ({totalSize / 1024 / 1024}MB) to {uploadsPath}");
