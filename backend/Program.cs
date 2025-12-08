@@ -57,6 +57,22 @@ if (!string.IsNullOrEmpty(connectionString))
 // Services
 builder.Services.AddScoped<UploadService>();
 
+// Configure form options for large file uploads (up to 5GB)
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 5L * 1024 * 1024 * 1024; // 5GB
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBoundaryLengthLimit = int.MaxValue;
+    options.MultipartHeadersCountLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
+// Configure Kestrel server options for large request bodies
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 5L * 1024 * 1024 * 1024; // 5GB
+});
+
 // CORS
 var corsOrigins = builder.Configuration["CORS_ORIGINS"]?.Split(',') 
     ?? new[] { "http://localhost:3000", "https://localhost:3001" };

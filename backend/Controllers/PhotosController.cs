@@ -131,6 +131,8 @@ public class PhotosController : ControllerBase
     }
 
     [HttpPost("bulk-extract")]
+    [RequestSizeLimit(5L * 1024 * 1024 * 1024)] // 5GB limit
+    [DisableRequestSizeLimit]
     public async Task<IActionResult> BulkExtractFiles(
         IFormFile archiveFile,
         [FromHeader(Name = "X-Upload-Password")] string? password)
