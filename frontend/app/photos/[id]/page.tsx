@@ -1,7 +1,9 @@
 import { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { getPhoto, getPhotoUrl } from '@/lib/api';
+import { getPhoto, getPhotoUrl, getPhotoNeighbors } from '@/lib/api';
+import PhotoNavigationButtons from '@/components/PhotoNavigationButtons';
+import PhotoNavigation from '@/components/PhotoNavigation';
 
 interface PageProps {
   params: Promise<{
@@ -48,8 +50,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PhotoPage({ params }: PageProps) {
   const { id } = await params;
   let photo;
+  let neighbors;
   try {
     photo = await getPhoto(id);
+    neighbors = await getPhotoNeighbors(id);
   } catch {
     notFound();
   }
@@ -114,6 +118,16 @@ export default async function PhotoPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+
+        <PhotoNavigationButtons 
+          previousId={neighbors.previousId}
+          nextId={neighbors.nextId}
+        />
+
+        <PhotoNavigation
+          previousId={neighbors.previousId}
+          nextId={neighbors.nextId}
+        />
 
         <div className="mt-8 text-center">
           <a
