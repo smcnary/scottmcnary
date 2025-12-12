@@ -20,6 +20,11 @@ export interface PaginatedPhotosResponse {
   totalPages: number;
 }
 
+export interface PhotoNeighborsResponse {
+  previousId: string | null;
+  nextId: string | null;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // Log API URL in development for debugging (server-side only)
@@ -146,6 +151,44 @@ export async function getPhoto(id: string): Promise<Photo> {
       throw error;
     }
     throw new Error('An unexpected error occurred while fetching photo');
+  }
+}
+
+export async function getPhotoNeighbors(id: string): Promise<PhotoNeighborsResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/photos/${id}/neighbors`, {
+      cache: 'no-store',
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Photo not found');
+      }
+      const errorText = await response.text();
+      let errorMessage = 'Failed to fetch photo neighbors';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorJson.message || errorMessage;
+      } catch {
+        if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+      throw new Error(errorMessage);
+    }
+    
+    const data = await response.json();
+    
+    // Map backend response to frontend interface (handle both PascalCase and camelCase)
+    return {
+      previousId: data.PreviousId || data.previousId || null,
+      nextId: data.NextId || data.nextId || null,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while fetching photo neighbors');
   }
 }
 
