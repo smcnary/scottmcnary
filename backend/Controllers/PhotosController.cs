@@ -70,6 +70,70 @@ public class PhotosController : ControllerBase
         return Ok(photo);
     }
 
+    [HttpGet("{id}/neighbors")]
+    public async Task<ActionResult<PhotoNeighborsResponse>> GetPhotoNeighbors(Guid id)
+    {
+        var photo = await _context.Photos.FindAsync(id);
+
+        if (photo == null)
+        {
+            return NotFound();
+        }
+
+        // Get all photos ordered by UploadedAt DESC (newest first)
+        var allPhotos = await _context.Photos
+            .OrderByDescending(p => p.UploadedAt)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        if (allPhotos.Count <= 1)
+        {
+            // Only one photo or no photos, no neighbors
+            return Ok(new PhotoNeighborsResponse
+            {
+                PreviousId = null,
+                NextId = null
+            });
+        }
+
+        var currentIndex = allPhotos.IndexOf(id);
+        if (currentIndex == -1)
+        {
+            return NotFound();
+        }
+
+        Guid? previousId = null;
+        Guid? nextId = null;
+
+        // Calculate previous (older photo, higher index in DESC order)
+        if (currentIndex == 0)
+        {
+            // First photo (newest), wrap to last photo (oldest)
+            previousId = allPhotos[allPhotos.Count - 1];
+        }
+        else
+        {
+            previousId = allPhotos[currentIndex - 1];
+        }
+
+        // Calculate next (newer photo, lower index in DESC order)
+        if (currentIndex == allPhotos.Count - 1)
+        {
+            // Last photo (oldest), wrap to first photo (newest)
+            nextId = allPhotos[0];
+        }
+        else
+        {
+            nextId = allPhotos[currentIndex + 1];
+        }
+
+        return Ok(new PhotoNeighborsResponse
+        {
+            PreviousId = previousId,
+            NextId = nextId
+        });
+    }
+
     [HttpPost("upload")]
     public async Task<IActionResult> UploadPhotos(
         IFormFile zipFile,
@@ -390,5 +454,11 @@ public class PaginatedPhotosResponse
     public int PageSize { get; set; }
     public int TotalCount { get; set; }
     public int TotalPages { get; set; }
+}
+
+public class PhotoNeighborsResponse
+{
+    public Guid? PreviousId { get; set; }
+    public Guid? NextId { get; set; }
 }
 
